@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------------------#
 from fastapi import APIRouter,Depends
 router=APIRouter(prefix="/auth",tags=["Auth,Authentication,Authorization"])
-from src.modules.auth.auth_service import register as register_service, login as login_service, create_new_pair_of_tokens
+from src.modules.auth.auth_service import register as register_service, login as login_service, create_new_pair_of_tokens,delete_user as delete_user_service
 from src.modules.auth.auth_validation_schema import Token, UserOut, UserCreate, LoginRequest, RefreshRequest
 from src.db.engine import get_db
 from sqlalchemy.orm import Session
@@ -16,6 +16,13 @@ def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = 
     logger.info(f"Login request received for {form_data.username}")
     user_login = LoginRequest(email=form_data.username, password=form_data.password)
     return login_service(user_login, db)
+
+@router.delete("/user/delete")
+def delete_user(user_email:str,db: Session = Depends(get_db),user=Depends(RoleChecker(["user","admin"]))):
+    logger.info(f"Delete request received for {user_email}")
+    if not user.role=="admin":
+        return {"message":"You are not authorized"}
+    return delete_user_service(user_email,db)
     
 @router.post("/register",response_model=UserOut)
 def register(user_create: UserCreate, db: Session = Depends(get_db)):

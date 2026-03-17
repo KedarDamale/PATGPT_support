@@ -59,10 +59,14 @@ def login(user_login:LoginRequest, db:Session=Depends(get_db)):
 # Deleting user can be done by Admin only
 #--------------------------------------------------------------------------#
 
-def delete_user(user)
-
-
-
+def delete_user(user_email:str,db:Session):
+    logger.info(f"Deleting user: {user_email}")
+    user = db.query(User).filter(User.email == user_email).first()
+    if not user:
+        return {"message": "User not found"}
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully"}
 
 #--------------------------------------------------------------------------#
 # creating new access and refresh tokens 
