@@ -1,0 +1,24 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "datetime>=6.0",
+    "ddgs>=9.11.4",
+    "duckduckgo-search>=8.1.1",
+    "fastapi[all]>=0.135.1",
+    "fastmcp>=3.1.0",
+    "langchain-community>=0.4.1",
+    "langchain-core>=1.2.18",
+    "langchain-mcp-adapters>=0.2.1",
+    "langchain[all]>=1.2.12",
+    "langgraph>=1.1.2",
+    "pwdlib[argon2]>=0.3.0",
+    "pydantic-settings>=2.13.1",
+    "pyjwt>=2.12.0",
+    "sqlalchemy>=2.0.48",
+    "tavily-python>=0.7.23",
+    "trafilatura>=2.0.0",
+]
