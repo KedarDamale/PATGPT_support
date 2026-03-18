@@ -4,7 +4,7 @@ from src.db.engine import get_db
 from src.modules.auth.auth_helpers import RoleChecker
 from .patgpt_related_validation_schema import (
     AboutPATGPTValidationSchema,
-    AboutPATGPTUpdateSchema,
+    AboutPATGPTUpdateSchema, 
     AboutPATGPTResponseSchema,
     PaginatedAboutPATGPTResponse,
 )

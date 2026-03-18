@@ -14,6 +14,7 @@ class AboutPATGPTService:
         record = AboutPATGPT(
             category=payload.category,
             data=payload.data,
+            keywords=payload.keywords,
             is_active=payload.is_active,
         )
         db.add(record)
