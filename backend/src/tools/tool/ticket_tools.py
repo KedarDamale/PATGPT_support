@@ -17,3 +17,4 @@ def take_follow_up(user_id,ticket_id):
     pass
 
 
+ticket_tools = [get_tickets,update_ticket,delete_ticket,take_follow_up]

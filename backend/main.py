@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from src.modules.auth.auth_controller import router as auth_router
+from src.modules.patgpt_related.patgpt_related_controller import router as patgpt_related_router
 from src.logger.log import logger
 from fastapi.middleware.cors import CORSMiddleware
 from src.config.env_config import settings
@@ -59,6 +60,7 @@ def health_check():
     logger.info("Health check request received")
     return {"status":"Server is running!"}
 app.include_router(auth_router)
+app.include_router(patgpt_related_router)
 
 if __name__ == "__main__":
     import uvicorn
