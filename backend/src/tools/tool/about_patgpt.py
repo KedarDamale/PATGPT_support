@@ -16,6 +16,7 @@ def get_info_keywords(category:str,db:Session=Depends(get_db)):
     3. data : for data related queries
     4. billing_and_plans : for billing and plans related queries
     5. default: if LLM is nor descisive about the category it can use "default as category" to retrieve all the information's keywords
+
     Returns:
     A dictionary with the following keys:
     - info_id: The info id 
