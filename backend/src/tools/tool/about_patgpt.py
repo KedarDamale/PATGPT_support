@@ -53,6 +53,4 @@ def get_info(info_ids:List[str],db:Session=Depends(get_db)):
     query = query.first()
     return query.information
 
-
-
 info_tools=[get_info_keywords,get_info]

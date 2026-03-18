@@ -49,7 +49,7 @@ class AboutPATGPTService:
     @staticmethod
     def update(db: Session, record_id: int, payload: AboutPATGPTUpdateSchema) -> AboutPATGPT:
         record = AboutPATGPTService.get_by_id(db, record_id)
-        update_data = payload.model_dump(exclude_unset=True)  # only update provided fields
+        update_data = payload.model_dump(exclude_unset=True)  
         for field, value in update_data.items():
             setattr(record, field, value)
         db.commit()
