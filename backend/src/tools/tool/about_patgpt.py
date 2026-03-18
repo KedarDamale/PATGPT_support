@@ -38,7 +38,7 @@ def get_info_keywords(category:str,db:Session=Depends(get_db)):
 def get_info(info_ids:List[str],db:Session=Depends(get_db)):
     """
     Summary:
-    This function is used to get the latest information about PatGPT and its parent company based on keywords.
+    This function is used immediately after get_info_keywords to get the latest information about PatGPT and its parent company based on retrieved keyword from get_info_keywords.
 
     Arguments:
     - info_ids: The info ids
