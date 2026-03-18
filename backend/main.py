@@ -31,11 +31,11 @@ app=FastAPI(lifespan=lifespan)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    error_details = exc.errors()
+    error_details = jsonable_encoder(exc.errors())  
     logger.error(f"!!! Attention: Validation Error !!!")
     logger.error(f"Path: {request.url.path}")
     logger.error(f"Method: {request.method}")
-    logger.error(f"Errors: {json.dumps(jsonable_encoder(error_details), indent=2)}")
+    logger.error(f"Errors: {json.dumps(error_details, indent=2)}")
     try:
         body = await request.body()
         logger.error(f"Request Body: {body.decode()}")
@@ -43,10 +43,9 @@ async def validation_exception_handler(request, exc):
         logger.error("Could not read request body")
     return JSONResponse(
         status_code=422,
-        content={"detail": error_details},
+        content={"detail": error_details},  
     )
 
-#adding CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

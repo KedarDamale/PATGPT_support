@@ -1,109 +1,65 @@
-#-----------------------------------------------------------------------------------------#
-#Password hashing utility from pwdlib by using argon2
-#we are not using bcrypt as it is susceptible to GPU attacks and cracking
-#-----------------------------------------------------------------------------------------#
-
-from pwdlib import PasswordHash
-from pwdlib.hashers.argon2 import Argon2Hasher
-from typing import List
-from fastapi import Depends, HTTPException, status
-
-ph = PasswordHash(hashers=[Argon2Hasher()])
-
-def hash_password(password:str) -> str:
-    return ph.hash(password)
-
-def verify_password(password:str, hashed_password:str) -> bool:
-    return ph.verify(password, hashed_password)
-
-#-----------------------------------------------------------------------------------------#
-#JWT token utilities
-#decoding token 
-#access and refresh token genration and verfication
-#-----------------------------------------------------------------------------------------#
-
-from src.config.env_config import settings
-from typing import Literal
+import uuid
 from datetime import datetime, timedelta, timezone
-import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+import bcrypt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+from src.config.env_config import settings
+from src.db.engine import get_db
 
-#this method creates access token and refresh token
-def encode_token(payload:dict,token_type:Literal["access", "refresh"] = "access") ->str: 
-    try:
-        #copying payload as we need to add another fields to payload
-        to_encode_payload=payload.copy()
-
-        #caluculating expire timedelta
-        if token_type=="access":
-            expire_time = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        elif token_type=="refresh":
-            expire_time = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        else:
-            raise ValueError("Invalid token type")
-
-        #encoding time delta in payload
-        to_encode_payload.update({"exp": expire_time,"type": token_type})
-        
-        return jwt.encode(to_encode_payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-
-    except jwt.PyJWTError as e:
-        raise RuntimeError(f"Error encoding token: {e}")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-#this method decodes tokens
-def decode_token(token:str)->dict:
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
+
+def encode_token(data: dict, token_type: str) -> str:
+    payload = data.copy()
+    now = datetime.now(timezone.utc)
+    payload["jti"] = str(uuid.uuid4())  # unique token ID for revocation
+    payload["type"] = token_type
+    if token_type == "access":
+        payload["exp"] = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    else:
+        payload["exp"] = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    except jwt.PyJWTError as e:
-        raise RuntimeError(f"Error decoding token: {e}")
+    except JWTError:
+        return None
 
-
-#-----------------------------------------------------------------------------------------#
-#Role checker class for RBAC and its get_current_user dependency
-#dependencies:getdb, decode token 
-#-----------------------------------------------------------------------------------------#
-
-from src.config.env_config import settings
-from src.db.engine import get_db 
-from fastapi.security import OAuth2PasswordBearer
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-from sqlalchemy.orm import Session
-from src.modules.auth.auth_model import User
-
-
-def get_current_user(token:str=Depends(oauth2_scheme),db:Session=Depends(get_db)):
-
-    exception:HTTPException=HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    try:
-        payload = decode_token(token)
-        if payload is None:
-            raise exception
-        email: str = payload.get("sub")
-        token_type: str = payload.get("type")
-
-        if email is None or token_type != "access":
-            raise exception
-
-        user = db.query(User).filter(User.email == email).first()
-        if user is None:
-            raise exception
-        return user
-
-    except:
-        raise exception
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    from src.modules.auth.auth_model import User, RevokedToken
+    payload = decode_token(token)
+    if payload is None or payload.get("type") != "access":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token")
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    user = db.query(User).filter(User.email == email, User.is_active == True).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    return user
 
 class RoleChecker:
-    def __init__(self,allowed_roles:List[str]):
+    def __init__(self, allowed_roles: list[str]):
         self.allowed_roles = allowed_roles
 
-    def __call__(self, user: User = Depends(get_current_user)):
+    def __call__(self, user=Depends(get_current_user)):
         if user.role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have enough permissions to access this resource"
+                detail="Insufficient permissions"
             )
         return user
