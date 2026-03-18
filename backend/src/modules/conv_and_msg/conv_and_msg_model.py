@@ -12,7 +12,7 @@ class Conversation(Base):
     __tablename__ = "Conversations"
 
     id = Column(String(36), primary_key=True)   
-    user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(200), nullable=True)   
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
