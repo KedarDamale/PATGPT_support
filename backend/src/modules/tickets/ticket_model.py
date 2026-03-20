@@ -15,10 +15,13 @@ def utcnow():
 
 class Ticket(Base):
     __tablename__ = "tickets"
+    
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
-    title = Column(String(255), nullable=False)
+    title = Column(String(500), nullable=False)
     description = Column(String(5000), nullable=False)
     status = Column(Enum(TicketStatus), default=TicketStatus.open, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
